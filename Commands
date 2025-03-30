@@ -229,3 +229,6 @@ write_json - write design to a JSON file.
 
 As an example, if we called synth_ice40 -top fifo -json fifo.json, our synthesized fifo design will be output as fifo.json. We can then read the design back into Yosys with read_json, but make sure you use design -reset or open a new interactive terminal first. 
 The JSON output we get can also be loaded into nextpnr to do place and route; but that is beyond the scope of this documentation.
+
+
+Advanced synthesis - https://yosyshq.readthedocs.io/projects/yosys/en/latest/using_yosys/synthesis/index.html
