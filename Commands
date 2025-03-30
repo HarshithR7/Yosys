@@ -1,0 +1,11 @@
+
+Open an Interactive shell by typing yosys
+* Loading the design  and parses code into an Abstract syntax tree(AST)- `yosys fifo.v`
+https://yosyshq.readthedocs.io/projects/yosys/en/latest/yosys_internals/flow/verilog_frontend.html
+
+* `read_verilog -D ICE40_HX -lib -specify +/ice40/cells_sim.v`  - loads the iCE40 cell models which allows us to include platform specific IP blocks in our design.
+
+* `hierarchy -check -top <top>` - declare a top level module , discard remaining .
+
+*`proc` -  these sub-commands work to convert the behavioral logic of processes into multiplexers and registers. we also use `proc -noopt` to prevent some automatic optimizations.
+* intial block is not synthesizable so we use `opt_expr;clean`
