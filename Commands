@@ -1,41 +1,120 @@
- design -reset
-
- read_verilog fifo.v
 Open an Interactive shell by typing yosys
-* Loading the design  and parses code into an Abstract syntax tree(AST)- `yosys fifo.v`
-https://yosyshq.readthedocs.io/projects/yosys/en/latest/yosys_internals/flow/verilog_frontend.html
-# Elaborate
 * `read_verilog -D ICE40_HX -lib -specify +/ice40/cells_sim.v`  - loads the iCE40 cell models which allows us to include platform specific IP blocks in our design.
-read_verilog -defer fifo.v. The -defer option there tells read_verilog only read the abstract syntax tree and defer actual compilation to a later hierarchy command. 
-This is useful in cases where the default parameters of modules yield invalid code which is not synthesizable. 
 
-* `hierarchy -check -top <top>` - declare a top level module , discard remaining .
+* Loading the design  and parses code into an Abstract syntax tree(AST)- `yosys fifo.v` or
+* read_verilog -defer designs/second_test/src/processor.v. The -defer option there tells read_verilog only read the abstract syntax tree and defer actual compilation to a later hierarchy command. 
+This is useful in cases where the default parameters of modules yield invalid code which is not synthesizable. 
+* read_verilog designs/second_test/src/processor.v
+https://yosyshq.readthedocs.io/projects/yosys/en/latest/yosys_internals/flow/verilog_frontend.html
+"Parsing Verilog input from `designs/second_test/src/processor.v' to AST representation.
+Generating RTLIL representation for module `\mips_processor'.
+Successfully finished Verilog frontend."
+design -reset
+
+
+# Elaborate
+
+* `hierarchy -check -top mips_processor - declare a top level module , discard remaining .
 By passing the -check option there we are also telling the hierarchy command that if the design includes any non-blackbox modules without an implementation it should return an error.
+"11. Executing HIERARCHY pass (managing design hierarchy).
+
+11.1. Analyzing design hierarchy..
+Top module:  \mips_processor
+
+11.2. Analyzing design hierarchy..
+Top module:  \mips_processor
+Removed 0 unused modules."
 
 *`proc` -  these sub-commands work to convert the behavioral logic of processes into multiplexers and registers. we also use `proc -noopt` to prevent some automatic optimizations.
+"12. Executing PROC pass (convert processes to netlists).
+12.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+12.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Executing PROC_INIT pass (extract init attributes).
+Executing PROC_ARST pass (detect async resets in processes).
+Executing PROC_ROM pass (convert switches to ROMs).
+Executing PROC_MUX pass (convert decision trees to multiplexers).
+ Executing PROC_DLATCH pass (convert process syncs to latches).
+12.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+12.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+12.12. Executing OPT_EXPR pass (perform const folding).
+"
+
+
 * intial block is not synthesizable so we use `opt_expr;clean`
 # Flattening
 `flatten` - Flattening the design like this can allow for optimizations between modules which would otherwise be missed.
 `tribuf -logic`- tribuf with the -logic option and deminout. These remove tristate and inout constructs respectively, replacing them with logic suitable for mapping to an FPGA
-`deminout`
+`deminout`    - 16. Executing DEMINOUT pass (demote inout ports to input or output).
 
 # Coarse- Grain Representation
 This is the stage of synthesis where we do things like const propagation, expression rewriting, and trimming unused parts of wires.
 * Part1
 opt_expr
-opt_clean
-check
-opt -nodffe -nosdff         - performs a set of optimizations
+opt_clean - Executing OPT_CLEAN pass (remove unused cells and wires).
+check   - reports all the problems
+opt -nodffe -nosdff         - performs a set of optimizations -  Executing OPT pass (performing simple optimizations).
+
+20.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module mips_processor.
+
+20.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\mips_processor'.
+Removed a total of 0 cells.
+
+20.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \mips_processor..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~1 debug messages>
+
+20.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \mips_processor.
+Performed a total of 0 changes.
+
+20.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\mips_processor'.
+Removed a total of 0 cells.
+
+20.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+20.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \mips_processor..
+
+20.8. Executing OPT_EXPR pass (perform const folding).""
+
 fsm
+
+"
+21. Executing FSM pass (extract and optimize FSM).
+
+21.1. Executing FSM_DETECT pass (finding FSMs in design).
+
+21.2. Executing FSM_EXTRACT pass (extracting FSM from design).
+
+21.3. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+21.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \mips_processor..
+
+21.5. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+21.6. Executing FSM_RECODE pass (re-assigning FSM state encoding).
+
+21.7. Executing FSM_INFO pass (dumping all available information on FSM cells).
+
+21.8. Executing FSM_MAP pass (mapping FSMs to basic logic)."
 opt
-opt_dff        - converted a mux to dff
+opt_dff        - converted a mux to dff -  Executing OPT_DFF pass (perform DFF optimizations).
 
 *Part2 - a series of optimizations
-wreduce    - reduce word size of operations if possible
-peepopt
+wreduce    - reduce word size of operations if possible -  Executing OPT_DFF pass (perform DFF optimizations).
+peepopt - 2. Executing PEEPOPT pass (run peephole optimizers).
 opt_clean
-share
-techmap -map +/cmp2lut.v -D LUT_WIDTH=4
+share   4. Executing SHARE pass (SAT-based resource sharing).
+techmap -map +/cmp2lut.v -D LUT_WIDTH=4       -Executing TECHMAP pass (map to technology primitives).
 opt_expr
 opt_clean  - remove unused cells and wires
 memory_dff [-no-rw-check]      - merging $dff cells to $memrd ports
@@ -59,7 +138,7 @@ chtype -set $mul t:$__soft_mul    (if -dsp)
 alumacc  - create alu and macc cells
 opt
 memory -nomap [-no-rw-check]
-memeory_collect - ombines all of the reads and writes for a memory block into a single cell.
+memory_collect - combines all of the reads and writes for a memory block into a single cell.Executing MEMORY_COLLECT pass (generating $mem cells).
 opt_clean
 
 * Final note
@@ -121,10 +200,10 @@ clean
 Other cells
 The following commands may also be used for mapping other cells:
 
-hilomap
+hilomap -Executing HILOMAP pass (mapping to constant drivers).
 Some architectures require special driver cells for driving a constant hi or lo value. This command replaces simple constants with instances of such driver cells.
 
-iopadmap
+iopadmap  -  Executing IOPADMAP pass (mapping inputs/outputs to IO-PAD cells).
 Top-level input/outputs must usually be implemented using special I/O-pad cells. This command inserts such cells to the design.
 
 These commands tend to either be in the map_cells section or after the check section depending on the flow.
@@ -225,6 +304,11 @@ write_blif - write design to BLIF file,
 
 write_edif - write design to EDIF netlist file, and
 
+# do the technology mapping and abc mapping and write json file
+dffunmap; techmap; abc -liberty your_tech.lib "3. Executing DFFUNMAP pass (unmap clock enable and synchronous reset from FFs).
+4. Executing TECHMAP pass (map to technology primitives)."
+
+write_json second_json
 write_json - write design to a JSON file.
 
 As an example, if we called synth_ice40 -top fifo -json fifo.json, our synthesized fifo design will be output as fifo.json. We can then read the design back into Yosys with read_json, but make sure you use design -reset or open a new interactive terminal first. 
