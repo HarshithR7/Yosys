@@ -304,11 +304,14 @@ write_blif - write design to BLIF file,
 
 write_edif - write design to EDIF netlist file, and
 
+read_liberty -lib your_library.lib
+ abc -liberty liberty.py
 # do the technology mapping and abc mapping and write json file
-dffunmap; techmap; abc -liberty your_tech.lib "3. Executing DFFUNMAP pass (unmap clock enable and synchronous reset from FFs).
+dffunmap; techmap; abc -liberty your_tech.lib  abc -liberty liberty.py
+"3. Executing DFFUNMAP pass (unmap clock enable and synchronous reset from FFs).
 4. Executing TECHMAP pass (map to technology primitives)."
 
-write_json second_json
+write_json second.json
 write_json - write design to a JSON file.
 
 As an example, if we called synth_ice40 -top fifo -json fifo.json, our synthesized fifo design will be output as fifo.json. We can then read the design back into Yosys with read_json, but make sure you use design -reset or open a new interactive terminal first. 
